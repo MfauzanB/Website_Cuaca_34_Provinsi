@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Web Cuaca 34 Provinsi</title>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+		integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+		crossorigin="" />
+	<link rel="preconnect" href="https://fonts.gstatic.com">
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@1,300&display=swap" rel="stylesheet">
+	<style type="text/css">
+		body {
+			padding: 0;
+			margin: 0;
+			font-family: 'Roboto', sans-serif;
+		}
+
+		#map {
+			height: 100vh;
+			width: 100%
+		}
+
+		header {
+			position: absolute;
+			top: 10px;
+			left: 60px;
+			z-index: 1000;
+			background: #fffd;
+			padding: 10px 20px;
+		}
+
+		header h1 {
+			padding: 0;
+			margin: 0;
+		}
+	</style>
+</head>
+
+<body>
+	<header>
+		<h1>Web Cuaca 34 Provinsi</h1>
+	</header>
+	<div id="map"></div>
+</body>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+	integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+	crossorigin=""></script>
+<script type="text/javascript">
+	let map = L.map('map').setView([0, 118.9213], 5);
+	let date = new Date();
+	let datetime = date.getFullYear() + '' +
+		(date.getMonth() + 1).toString().padStart(2, '0') + '' +
+		(date.getDate()).toString().padStart(2, '0') + '' +
+		date.getHours() + '00';
+	let tanggal = document.querySelector('.tanggal');
+	let selectTanggal = document.querySelector('[name=select-tanggal]');
+	let nextDate;
+	let createSelect = false;
+	let selectOption = [];
+	let kodeCuaca = {
+		'0': ['Cerah', 'clearskies.png'],
+		'1': ['Cerah Berawan ', 'partlycloudy.png'],
+		'2': ['Cerah Berawan ', 'partlycloudy.png'],
+		'3': ['Berawan ', 'mostlycloudy.png'],
+		'4': ['Berawan Tebal', 'overcast.png'],
+		'5': ['Udara Kabur', 'haze.png'],
+		'10': ['Asap', 'smoke.png'],
+		'45': ['Kabut', 'fog.png'],
+		'60': ['Hujan Ringan', 'lightrain.png'],
+		'61': ['Hujan Sedang', 'rain.png'],
+		'63': ['Hujan Lebat', 'heavyrain.png'],
+		'80': ['Hujan Lokal', 'isolatedshower.png'],
+		'95': ['Hujan Petir', 'severethunderstorm.png'],
+		'97': ['Hujan Petir', 'severethunderstorm.png'],
+	};
+	
+
+	let apiUrl = 'https://data.bmkg.go.id/DataMKG/MEWS/DigitalForecast/DigitalForecast-Indonesia.xml';
+	L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(map);
+	getData();
+	async function getData() {
+		let response = await fetch(apiUrl);
+		let xmlString = await response.text();
+		let parse = new DOMParser();
+		let xmlData = parse.parseFromString(xmlString, 'text/xml');
+		let areas = xmlData.querySelectorAll('area');
+		let getTime = false;
+		let posPrakiraan;
+		areas.forEach((area) => {
+			let lat = area.getAttribute('latitude');
+			let lng = area.getAttribute('longitude');
+			let prov = area.getAttribute('description');
+			let weathers = area.querySelectorAll('parameter[id="weather"] timerange');
+			weathers.forEach((weather, i) => {
+				let getDateTime = weather.getAttribute('datetime');
+				if (getDateTime > datetime && getTime == false) {
+					posPrakiraan = i;
+					getTime = true;
+				}
+				// console.log(getDateTime);
+			});
+			let prakiraan = weathers[posPrakiraan].querySelector('value').textContent;
+			let iconUrl = 'assets/images/icons/' + kodeCuaca[prakiraan][1];
+			let deskripsi = kodeCuaca[prakiraan][0];
+
+
+			let marker = L.marker([lat, lng], {
+				icon: L.icon({
+					iconUrl: iconUrl,
+					iconSize: [50, 50],
+					iconAnchor: [25, 25]
+				})
+			}).bindPopup('<strong>Kota ' + prov + '</strong><br>' + '<br>Keterangan : ' + deskripsi);
+		
+			marker.addTo(map);
+		
+
+			// console.log(area);
+		})
+	}
+</script>
+
+</html>
